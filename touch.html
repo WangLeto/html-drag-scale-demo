@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+  <title>Document</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overscroll-behavior: contain;
+    }
+
+    .board {
+      width: 100%;
+      height: 100%;
+    }
+
+    .board img {
+      width: 260px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="board">
+    <img src="https://cdn.sspai.com/article/86c69914-4545-bc1c-1310-2975d4fe8d6b.jpg?imageMogr2/quality/95/thumbnail/!700x233r/gravity/Center/crop/700x233" alt="">
+  </div>
+  <script>
+    let img = document.querySelector('img');
+    const getStyle = (target, style) => {
+      let styles = window.getComputedStyle(target, null);
+      return styles.getPropertyValue(style);
+    };
+    const getTranslate = (target) => {
+      let matrix = getStyle(target, 'transform');
+      let nums = matrix.substring(7, matrix.length - 1).split(', ');
+      let left = parseInt(nums[4]) || 0;
+      let top = parseInt(nums[5]) || 0;
+      return {
+        left: left,
+        top: top
+      }
+    };
+    let preTouchPosition = {};
+    const recordPreTouchPosition = (touch) => {
+      preTouchPosition = {
+        x: touch.clientX,
+        y: touch.clientY
+      };
+    };
+    let translateX = 0;
+    let translateY = 0;
+    let scaleRatio = 1;
+    let scaleOrigin = {
+      x: 0,
+      y: 0
+    };
+    let preTouchesClientx1y1x2y2 = [];
+    let originHaveSet = false;
+    const relativeCoordinate = (x, y, rect) => {
+      let cx = (x - rect.left) / scaleRatio;
+      let cy = (y - rect.top) / scaleRatio;
+      return {
+        x: cx,
+        y: cy
+      };
+    };
+    const setStyle = (key, value) => {
+      img.style[key] = value;
+    };
+    img.addEventListener('touchmove', e => {
+      let touches = e.touches;
+      if (touches.length === 1) {
+        let oneTouch = touches['0'];
+        let translated = getTranslate(oneTouch.target);
+        translateX = oneTouch.clientX - preTouchPosition.x + translated.left;
+        translateY = oneTouch.clientY - preTouchPosition.y + translated.top;
+        let matrix = `matrix(${scaleRatio}, 0, 0, ${scaleRatio}, ${translateX}, ${translateY})`;
+        setStyle('transform', matrix);
+        recordPreTouchPosition(oneTouch);
+      } else {
+        let one = touches['0'];
+        let two = touches['1'];
+        const distance = (x1, y1, x2, y2) => {
+          let a = x1 - x2;
+          let b = y1 - y2;
+          return Math.sqrt(a * a + b * b);
+        };
+        scaleRatio = distance(one.clientX, one.clientY, two.clientX, two.clientY) / distance(...preTouchesClientx1y1x2y2) * scaleRatio || 1;
+        if (!originHaveSet) {
+          originHaveSet = true;
+          // 移动视线中心
+          let origin = relativeCoordinate((one.clientX + two.clientX) / 2, (one.clientY + two.clientY) / 2, img.getBoundingClientRect());
+          // 修正视野变化带来的平移量
+          translateX = (scaleRatio - 1) * (origin.x - scaleOrigin.x) + translateX;
+          translateY = (scaleRatio - 1) * (origin.y - scaleOrigin.y) + translateY;
+          setStyle('transform-origin', `${origin.x}px ${origin.y}px`);
+          scaleOrigin = origin;
+        }
+        let matrix = `matrix(${scaleRatio}, 0, 0, ${scaleRatio}, ${translateX}, ${translateY})`;
+        setStyle('transform', matrix);
+        preTouchesClientx1y1x2y2 = [one.clientX, one.clientY, two.clientX, two.clientY];
+      }
+    });
+    img.addEventListener('touchstart', e => {
+      let touches = e.touches;
+      if (touches.length > 1) {
+        let one = touches['0'];
+        let two = touches['1'];
+        preTouchesClientx1y1x2y2 = [one.clientX, one.clientY, two.clientX, two.clientY];
+        originHaveSet = false;
+      }
+      recordPreTouchPosition(touches['0']);
+    });
+    // 触摸点离开时更新最后位置
+    img.addEventListener('touchend', e => {
+      let touches = e.touches;
+      if (touches.length === 1) {
+        // recordPreTouchPosition(touches['0']);
+      }
+    });
+    img.addEventListener('touchcancel', e => {
+      let touches = e.touches;
+      if (touches.length === 1) {
+        recordPreTouchPosition(touches['0']);
+      }
+    });
+  </script>
+</body>
+
+</html>
