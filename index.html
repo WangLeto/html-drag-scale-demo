@@ -121,7 +121,7 @@
     img.addEventListener('touchend', e => {
       let touches = e.touches;
       if (touches.length === 1) {
-        // recordPreTouchPosition(touches['0']);
+        recordPreTouchPosition(touches['0']);
       }
     });
     img.addEventListener('touchcancel', e => {
