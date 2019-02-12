@@ -106,6 +106,7 @@
         setStyle('transform', matrix);
         preTouchesClientx1y1x2y2 = [one.clientX, one.clientY, two.clientX, two.clientY];
       }
+      e.preventDefault();
     });
     img.addEventListener('touchstart', e => {
       let touches = e.touches;
@@ -130,6 +131,24 @@
         recordPreTouchPosition(touches['0']);
       }
     });
+    let passiveSupport = false;
+    try {
+      // 参考：https://juejin.im/post/5ad804c1f265da504547fe68
+      let option = Object.defineProperty({}, 'passive', {
+        get: () => {
+          console.log('support')
+          passiveSupport = true;
+        }
+      });
+      window.addEventListener('passivetest', null, option);
+    } catch (err) {}
+    // 仅针对无 scroll 页面的写法
+    // 现阶段无法实现兼容 scroll 与阻止默认的浏览器自定义下拉事件（如微信）
+    document.body.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+    }, passiveSupport ? {
+      passive: false
+    } : false);
   </script>
 </body>
 
